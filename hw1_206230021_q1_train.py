@@ -15,31 +15,38 @@ MINI_EPOCHS = 10
 EPOCHS = 100
 
 
-def fetch_MNIST_data():
+def fetch_MNIST_data(filter=None):
     # Transform the image data into Tensor
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.5,), (0.5,))
     ])
 
-    train_dataset = datasets.MNIST(root='./data/',
-                                   train=True,
-                                   transform=transform,
-                                   download=True)
+    if not filter:
+        # Get the entire dataset
+        train_dataset = datasets.MNIST(root='./data/',
+                                       train=True,
+                                       transform=transform,
+                                       download=True)
 
-    test_dataset = datasets.MNIST(root='./data/',
-                                  train=False,
-                                  transform=transform,
-                                  download=True)
+        test_dataset = datasets.MNIST(root='./data/',
+                                      train=False,
+                                      transform=transform,
+                                      download=True)
 
-    # Data Loader (Input Pipeline)
-    train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
-                                               batch_size=BATCH_SIZE,
-                                               shuffle=True)
+        # Data Loader (Input Pipeline)
+        train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
+                                                   batch_size=BATCH_SIZE,
+                                                   shuffle=True)
 
-    test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
-                                              batch_size=BATCH_SIZE,
-                                              shuffle=False)
+        test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
+                                                  batch_size=BATCH_SIZE,
+                                                  shuffle=False)
+
+    else:
+        # Filter the dataset
+        # TODO: Implement dataset filtering
+        pass
 
     return train_dataset, train_loader, test_dataset, test_loader
 
@@ -68,6 +75,8 @@ class BayesianNeuralNetwork(nn.Module):
 
 
 def main():
+    kl_div_values = []
+
     # --- Model 1 - without randomization, trained on the full MNIST dataset ---
     train_data, train_loader, test_data, test_loader = fetch_MNIST_data()
 
@@ -121,7 +130,9 @@ def main():
     plot_convergence_over_epochs(train_accuracies_1, test_accuracies_1, epochs=MINI_EPOCHS, mode='Accuracy', model=1)
     plot_convergence_over_epochs(train_losses_1, test_losses_1, epochs=MINI_EPOCHS, mode='CE Loss', model=1)
 
-    print(f'KL Divergence for model 1 is {kl_divergence_from_nn(model=model_1)}\n')
+    kl_div_values.append(kl_divergence_from_nn(model=model_1))
+
+
 
     # --- Model 2 - without randomization, trained on the first 200 MNIST examples ---
     train_data, train_loader, test_data, test_loader = fetch_MNIST_data()
@@ -133,7 +144,7 @@ def main():
     loss = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model_2.parameters())
 
-    train_images, train_labels = next(iter(train_loader))
+    train_images, train_labels = next(iter(train_loader))  # Fetching the first 200 training samples
     train_images = train_images.view(-1, 28 * 28)
 
     train_accuracies_2, train_losses_2, test_accuracies_2, test_losses_2 = [], [], [], []
@@ -175,23 +186,52 @@ def main():
     plot_convergence_over_epochs(train_accuracies_2, test_accuracies_2, epochs=EPOCHS, mode='Accuracy', model=2)
     plot_convergence_over_epochs(train_losses_2, test_losses_2, epochs=EPOCHS, mode='CE Loss', model=2)
 
-    print(f'KL Divergence for model 2 is {kl_divergence_from_nn(model=model_2)}\n')
+    kl_div_values.append(kl_divergence_from_nn(model=model_2))
 
-    # --- Model 3 - with Ber(0.5) labels, trained on the first 200 MNIST examples ---
-    train_data, train_loader, test_data, test_loader = fetch_MNIST_data()
 
-    print(" --- Model 3 - with Ber(0.5) labels, trained on the first 200 MNIST examples ---")
+    # --- Model 3 - without randomization, trained on the 200 first 3's and 8's ---
+    train_data, train_loader, test_data, test_loader = fetch_MNIST_data([3, 8])
+
+    print("--- Model 3 - without randomization, trained on the 200 first 3's and 8's ---")
     model_3 = BayesianNeuralNetwork(input_size=28 * 28,
                                     output_size=10)
 
     loss = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model_3.parameters())
 
-    train_images, train_labels = next(iter(train_loader))  # Fetching the first 128 training samples
-    train_images = train_images.view(-1, 28 * 28)
-    train_labels = torch.randint(low=0, high=2, size=(200,))  # Using randint() for random label generation
-
     train_accuracies_3, train_losses_3, test_accuracies_3, test_losses_3 = [], [], [], []
+
+    # TODO: Finish training and evaluation implementation
+
+    # -- Model 4 - without randomization, trained on all 3's and 8's ---
+    train_data, train_loader, test_data, test_loader = fetch_MNIST_data([3, 8])
+
+    print("--- Model 4 - without randomization, trained on all 3's and 8's ---")
+    model_3 = BayesianNeuralNetwork(input_size=28 * 28,
+                                    output_size=10)
+
+    loss = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model_3.parameters())
+
+    train_accuracies_4, train_losses_4, test_accuracies_4, test_losses_4 = [], [], [], []
+
+    # TODO: Finish training and evaluation implementation
+
+    # --- Model 5 - Ber(0.5) labels, trained on the first 200 MNIST examples ---
+    train_data, train_loader, test_data, test_loader = fetch_MNIST_data()
+
+    print(" --- Model 3 - Ber(0.5) labels, trained on the first 200 MNIST examples ---")
+    model_5 = BayesianNeuralNetwork(input_size=28 * 28,
+                                    output_size=10)
+
+    loss = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model_5.parameters())
+
+    train_images, train_labels = next(iter(train_loader))  # Fetching the first 200 training samples
+    train_images = train_images.view(-1, 28 * 28)
+    train_labels = torch.bernoulli(torch.full((200, ), 0.5))
+
+    train_accuracies_5, train_losses_5, test_accuracies_5, test_losses_5 = [], [], [], []
     for i in range(EPOCHS):
         print(f'Epoch {i + 1}...')
         epoch_train_loss, epoch_test_loss = 0, 0
@@ -199,7 +239,7 @@ def main():
 
         optimizer.zero_grad()  # https://stackoverflow.com/questions/48001598/why-do-we-need-to-call-zero-grad-in-pytorch
 
-        train_outputs = model_3(train_images)  # Getting model output for the current train batch
+        train_outputs = model_5(train_images)  # Getting model output for the current train batch
         train_predictions = torch.argmax(train_outputs, dim=1)
 
         current_train_accuracies.append(((train_predictions == train_labels).sum().item()) / train_labels.size(0))
@@ -215,22 +255,28 @@ def main():
         # Evaluation after each epoch
         for (test_images, test_labels) in test_loader:
             test_images = test_images.view(-1, 28 * 28)
-            test_outputs = model_3(test_images)
+            test_labels = torch.bernoulli(torch.full((200, ), 0.5))
+            test_outputs = model_5(test_images)
             test_predictions = torch.argmax(test_outputs, dim=1)
             current_test_accuracies.append(((test_predictions == test_labels).sum().item()) / test_labels.size(0))
             current_test_loss = loss(input=test_outputs.float(), target=test_labels.long())
             epoch_test_loss += current_test_loss
 
-        train_accuracies_3.append(100 * (sum(current_train_accuracies) / len(current_train_accuracies)))
-        train_losses_3.append(epoch_train_loss.item())
-        test_accuracies_3.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
-        test_losses_3.append(epoch_test_loss.item())
+        train_accuracies_5.append(100 * (sum(current_train_accuracies) / len(current_train_accuracies)))
+        train_losses_5.append(epoch_train_loss.item())
+        test_accuracies_5.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
+        test_losses_5.append(epoch_test_loss.item())
 
     # Plotting accuracy and loss graphs
-    plot_convergence_over_epochs(train_accuracies_3, test_accuracies_3, epochs=EPOCHS, mode='Accuracy', model=3)
-    plot_convergence_over_epochs(train_losses_3, test_losses_3, epochs=EPOCHS, mode='CE Loss', model=3)
+    plot_convergence_over_epochs(train_accuracies_5, test_accuracies_5, epochs=EPOCHS, mode='Accuracy', model=5)
+    plot_convergence_over_epochs(train_losses_5, test_losses_5, epochs=EPOCHS, mode='CE Loss', model=5)
 
-    print(f'KL Divergence for model 3 is {kl_divergence_from_nn(model=model_3)}\n')
+    kl_div_values.append(kl_divergence_from_nn(model=model_5))
+
+
+    # Display KL Divergence values
+    for i in range(5):
+        print(f"Model {i+1}'s KL Divergence: {kl_div_values[i]}")
 
 
 if __name__ == '__main__':

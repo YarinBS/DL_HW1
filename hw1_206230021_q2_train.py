@@ -2,47 +2,15 @@ import pickle
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torchvision.datasets as datasets
-import torchvision.transforms as transforms
 from blitz.modules import BayesianLinear
-from blitz.utils import variational_estimator
 from blitz.losses import kl_divergence_from_nn
 
-from hw1_206230021_q1_train import plot_convergence_over_epochs
+from hw1_206230021_q1_train import fetch_MNIST_data, plot_convergence_over_epochs, BayesianNeuralNetwork
 
 # --- Hyper-parameters ---
 BATCH_SIZE = 200
 MINI_EPOCHS = 10
 EPOCHS = 100
-
-
-def fetch_MNIST_data():
-    # Transform the image data into Tensor
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,))
-    ])
-
-    train_dataset = datasets.MNIST(root='./data/',
-                                   train=True,
-                                   transform=transform,
-                                   download=True)
-
-    test_dataset = datasets.MNIST(root='./data/',
-                                  train=False,
-                                  transform=transform,
-                                  download=True)
-
-    # Data Loader (Input Pipeline)
-    train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
-                                               batch_size=BATCH_SIZE,
-                                               shuffle=True)
-
-    test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
-                                              batch_size=BATCH_SIZE,
-                                              shuffle=False)
-
-    return train_dataset, train_loader, test_dataset, test_loader
 
 
 class LogisticRegressionClassifier(nn.Module):
@@ -58,6 +26,26 @@ class LogisticRegressionClassifier(nn.Module):
         x_ = self.layer1(x)
         outputs = torch.sigmoid(x_)
         return outputs
+
+
+class DeepBayesianNeuralNetwork(nn.Module):
+    """
+    Just like the BayesianNeuralNetwork, but with an extra Bayesian layers
+    """
+
+    def __init__(self, input_size, hidden1, hidden2, output_size):
+        super().__init__()
+        # self.linear = nn.Linear(input_dim, output_dim)
+        self.blinear1 = BayesianLinear(input_size, hidden1)
+        self.blinear2 = BayesianLinear(hidden1, hidden2)
+        self.blinear3 = BayesianLinear(hidden2, output_size)
+
+    def forward(self, x):
+        x_ = self.blinear1(x)
+        x_ = F.relu(x_)
+        x_ = self.blinear2(x_)
+        x_ = F.relu(x_)
+        return self.blinear3(x_)
 
 
 def main():
@@ -111,8 +99,8 @@ def main():
         test_losses_1.append(epoch_test_loss.item())
 
     # Plotting accuracy and loss graphs
-    plot_convergence_over_epochs(train_accuracies_1, test_accuracies_1, mode='Accuracy', model=1)
-    plot_convergence_over_epochs(train_losses_1, test_losses_1, mode='CE Loss', model=1)
+    plot_convergence_over_epochs(train_accuracies_1, test_accuracies_1, epochs=EPOCHS, mode='Accuracy', model=1)
+    plot_convergence_over_epochs(train_losses_1, test_losses_1, epochs=EPOCHS, mode='CE Loss', model=1)
 
     # --- Model 2 - Regularized Logistic Regression ---
     train_data, train_loader, test_data, test_loader = fetch_MNIST_data()
@@ -164,8 +152,17 @@ def main():
         test_losses_2.append(epoch_test_loss.item())
 
     # Plotting accuracy and loss graphs
-    plot_convergence_over_epochs(train_accuracies_2, test_accuracies_2, mode='Accuracy', model=2)
-    plot_convergence_over_epochs(train_losses_2, test_losses_2, mode='CE Loss', model=2)
+    plot_convergence_over_epochs(train_accuracies_2, test_accuracies_2, epochs=EPOCHS, mode='Accuracy', model=2)
+    plot_convergence_over_epochs(train_losses_2, test_losses_2, epochs=EPOCHS, mode='CE Loss', model=2)
+
+    # --- Model 3 - BNN ---
+    # TODO: Implement this model
+
+    # --- Model 4 - Deep BNN with hidden1 = 512, hidden2 = 100 ---
+    # TODO: Implement this model
+
+    # --- Model 5 - Deep BNN with hidden1 = 250, hidden2 = 50 ---
+    # TODO: Implement this model
 
 
 if __name__ == '__main__':
