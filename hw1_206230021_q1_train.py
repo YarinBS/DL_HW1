@@ -93,6 +93,10 @@ def plot_convergence_over_epochs(train_list: list, test_list: list, epochs: int,
     plt.show()
 
 
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
 def model_1_train_and_eval():
     train_data, train_loader, test_data, test_loader = fetch_MNIST_data()
 
@@ -375,7 +379,6 @@ def model_5_train_and_eval():
 class BayesianNeuralNetwork(nn.Module):
     def __init__(self, input_size, output_size):
         super().__init__()
-        # self.linear = nn.Linear(input_dim, output_dim)
         self.blinear1 = BayesianLinear(input_size, 512)
         self.blinear2 = BayesianLinear(512, output_size)
 
@@ -387,25 +390,36 @@ class BayesianNeuralNetwork(nn.Module):
 
 def main():
     kl_div_values = []
+    kl_div_per_param_values = []
 
     model1 = model_1_train_and_eval()  # --- Model 1 - without randomization, trained on the full MNIST dataset ---
-    kl_div_values.append(kl_divergence_from_nn(model=model1))
+    kl_div_value = kl_divergence_from_nn(model=model1)
+    kl_div_values.append(kl_div_value)
+    kl_div_per_param_values.append(kl_div_value / count_parameters(model1))
 
     model2 = model_2_train_and_eval()  # --- Model 2 - without randomization, trained on the first 200 MNIST examples ---
-    kl_div_values.append(kl_divergence_from_nn(model=model2))
+    kl_div_value = kl_divergence_from_nn(model=model2)
+    kl_div_values.append(kl_div_value)
+    kl_div_per_param_values.append(kl_div_value / count_parameters(model2))
 
     model3 = model_3_train_and_eval()  # --- Model 3 - without randomization, trained on the 200 first 3's and 8's ---
-    kl_div_values.append(kl_divergence_from_nn(model=model3))
+    kl_div_value = kl_divergence_from_nn(model=model3)
+    kl_div_values.append(kl_div_value)
+    kl_div_per_param_values.append(kl_div_value / count_parameters(model3))
 
     model4 = model_4_train_and_eval()  # -- Model 4 - without randomization, trained on all 3's and 8's ---
-    kl_div_values.append(kl_divergence_from_nn(model=model4))
+    kl_div_value = kl_divergence_from_nn(model=model4)
+    kl_div_values.append(kl_div_value)
+    kl_div_per_param_values.append(kl_div_value / count_parameters(model4))
 
     model5 = model_5_train_and_eval()  # --- Model 5 - Ber(0.5) labels, trained on the first 200 MNIST examples ---
-    kl_div_values.append(kl_divergence_from_nn(model=model5))
+    kl_div_value = kl_divergence_from_nn(model=model5)
+    kl_div_values.append(kl_div_value)
+    kl_div_per_param_values.append(kl_div_value / count_parameters(model5))
 
     # Display KL Divergence values
     for i in range(5):
-        print(f"Model {i + 1}'s KL Divergence: {kl_div_values[i]}")
+        print(f"Model {i + 1}'s KL Divergence: {kl_div_values[i]}; Per parameter: {kl_div_per_param_values[i]}")
 
 
 if __name__ == '__main__':
