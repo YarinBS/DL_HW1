@@ -432,6 +432,8 @@ def main():
     for i in range(5):
         print(f"Model {i + 1}'s KL Divergence: {kl_div_values[i]}; Per parameter: {kl_div_per_param_values[i]}")
 
+    # TODO: Plot a graph of KL values over epochs
+
 
 if __name__ == '__main__':
     main()
