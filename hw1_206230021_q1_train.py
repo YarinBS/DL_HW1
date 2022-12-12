@@ -24,8 +24,8 @@ EPOCHS = 75
 def fetch_MNIST_data(filter=None):
     """
     Fetching PyTorch's MNIST dataset.
-    Can also filter the fetched training data by digits.
-    :param filter: None (default) or list of digits to keep in the training set
+    Can also filter the fetched training/test data by digits.
+    :param filter: None (default) or list of digits to keep in the training/test set
     :return: train/test dataset/loader
     """
     # Transform the image data into Tensor
@@ -71,6 +71,12 @@ def fetch_MNIST_data(filter=None):
                                       transform=transform,
                                       download=True)
 
+        # Filtering the test data
+        filter_indices = np.where((test_dataset.targets == filter[0]) | (test_dataset.targets == filter[1]))
+        # filter_indices = np.where(train_dataset.targets in filter)
+        test_dataset.data = test_dataset.data[filter_indices[0], :, :]
+        test_dataset.targets = test_dataset.targets[filter_indices]
+
         # Data Loader (Input Pipeline)
         train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
                                                    batch_size=BATCH_SIZE,
@@ -102,6 +108,7 @@ def model_1_train_and_eval():
 
     print("--- Model 1 - without randomization, trained on the full MNIST dataset ---")
     model_1 = BayesianNeuralNetwork(input_size=28 * 28,
+                                    hidden_size=512,
                                     output_size=10)
 
     loss = nn.CrossEntropyLoss()
@@ -148,7 +155,7 @@ def model_1_train_and_eval():
 
     # Plotting accuracy and loss graphs
     plot_convergence_over_epochs(train_accuracies_1, test_accuracies_1, epochs=MINI_EPOCHS, mode='Accuracy', model=1)
-    plot_convergence_over_epochs(train_losses_1, test_losses_1, epochs=MINI_EPOCHS, mode='CE Loss', model=1)
+    # plot_convergence_over_epochs(train_losses_1, test_losses_1, epochs=MINI_EPOCHS, mode='CE Loss', model=1)
 
     return model_1
 
@@ -156,8 +163,9 @@ def model_1_train_and_eval():
 def model_2_train_and_eval():
     train_data, train_loader, test_data, test_loader = fetch_MNIST_data()
 
-    print(" --- Model 2 - without randomization, trained on the first 200 MNIST examples ---")
+    print(" --- Model 2 - without randomization, trained on the first 200 examples ---")
     model_2 = BayesianNeuralNetwork(input_size=28 * 28,
+                                    hidden_size=512,
                                     output_size=10)
 
     loss = nn.CrossEntropyLoss()
@@ -203,7 +211,7 @@ def model_2_train_and_eval():
 
     # Plotting accuracy and loss graphs
     plot_convergence_over_epochs(train_accuracies_2, test_accuracies_2, epochs=EPOCHS, mode='Accuracy', model=2)
-    plot_convergence_over_epochs(train_losses_2, test_losses_2, epochs=EPOCHS, mode='CE Loss', model=2)
+    # plot_convergence_over_epochs(train_losses_2, test_losses_2, epochs=EPOCHS, mode='CE Loss', model=2)
 
     return model_2
 
@@ -213,6 +221,7 @@ def model_3_train_and_eval():
 
     print("--- Model 3 - without randomization, trained on the 200 first 3's and 8's ---")
     model_3 = BayesianNeuralNetwork(input_size=28 * 28,
+                                    hidden_size=512,
                                     output_size=10)
 
     loss = nn.CrossEntropyLoss()
@@ -259,7 +268,7 @@ def model_3_train_and_eval():
 
     # Plotting accuracy and loss graphs
     plot_convergence_over_epochs(train_accuracies_3, test_accuracies_3, epochs=EPOCHS, mode='Accuracy', model=3)
-    plot_convergence_over_epochs(train_losses_3, test_losses_3, epochs=EPOCHS, mode='CE Loss', model=3)
+    # plot_convergence_over_epochs(train_losses_3, test_losses_3, epochs=EPOCHS, mode='CE Loss', model=3)
 
     return model_3
 
@@ -269,6 +278,7 @@ def model_4_train_and_eval():
 
     print("--- Model 4 - without randomization, trained on all 3's and 8's ---")
     model_4 = BayesianNeuralNetwork(input_size=28 * 28,
+                                    hidden_size=512,
                                     output_size=10)
 
     loss = nn.CrossEntropyLoss()
@@ -314,7 +324,7 @@ def model_4_train_and_eval():
 
     # Plotting accuracy and loss graphs
     plot_convergence_over_epochs(train_accuracies_4, test_accuracies_4, epochs=MINI_EPOCHS, mode='Accuracy', model=4)
-    plot_convergence_over_epochs(train_losses_4, test_losses_4, epochs=MINI_EPOCHS, mode='CE Loss', model=4)
+    # plot_convergence_over_epochs(train_losses_4, test_losses_4, epochs=MINI_EPOCHS, mode='CE Loss', model=4)
 
     return model_4
 
@@ -324,6 +334,7 @@ def model_5_train_and_eval():
 
     print(" --- Model 5 - Ber(0.5) labels, trained on the first 200 MNIST examples ---")
     model_5 = BayesianNeuralNetwork(input_size=28 * 28,
+                                    hidden_size=512,
                                     output_size=10)
 
     loss = nn.CrossEntropyLoss()
@@ -371,16 +382,16 @@ def model_5_train_and_eval():
 
     # Plotting accuracy and loss graphs
     plot_convergence_over_epochs(train_accuracies_5, test_accuracies_5, epochs=EPOCHS, mode='Accuracy', model=5)
-    plot_convergence_over_epochs(train_losses_5, test_losses_5, epochs=EPOCHS, mode='CE Loss', model=5)
+    # plot_convergence_over_epochs(train_losses_5, test_losses_5, epochs=EPOCHS, mode='CE Loss', model=5)
 
     return model_5
 
 
 class BayesianNeuralNetwork(nn.Module):
-    def __init__(self, input_size, output_size):
+    def __init__(self, input_size, hidden_size, output_size):
         super().__init__()
-        self.blinear1 = BayesianLinear(input_size, 512)
-        self.blinear2 = BayesianLinear(512, output_size)
+        self.blinear1 = BayesianLinear(input_size, hidden_size)
+        self.blinear2 = BayesianLinear(hidden_size, output_size)
 
     def forward(self, x):
         x_ = self.blinear1(x)
@@ -397,7 +408,7 @@ def main():
     kl_div_values.append(kl_div_value)
     kl_div_per_param_values.append(kl_div_value / count_parameters(model1))
 
-    model2 = model_2_train_and_eval()  # --- Model 2 - without randomization, trained on the first 200 MNIST examples ---
+    model2 = model_2_train_and_eval()  # --- Model 2 - without randomization, trained on the first 200 examples ---
     kl_div_value = kl_divergence_from_nn(model=model2)
     kl_div_values.append(kl_div_value)
     kl_div_per_param_values.append(kl_div_value / count_parameters(model2))
