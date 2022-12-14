@@ -21,11 +21,12 @@ MINI_EPOCHS = 10
 EPOCHS = 75
 
 
-def fetch_MNIST_data(filter=None):
+def fetch_MNIST_data(filter=None, random_test_labels=False):
     """
     Fetching PyTorch's MNIST dataset.
     Can also filter the fetched training/test data by digits.
     :param filter: None (default) or list of digits to keep in the training/test set
+    :param random_labels: False (default). If True, sets Ber(0.5) labels (0 or 1) to the test data
     :return: train/test dataset/loader
     """
     # Transform the image data into Tensor
@@ -44,6 +45,9 @@ def fetch_MNIST_data(filter=None):
                                       train=False,
                                       transform=transform,
                                       download=True)
+        
+        if random_test_labels:
+            # TODO: Set Ber(0.5) labels (0 or 1) to the test data
 
         # Data Loader (Input Pipeline)
         train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
