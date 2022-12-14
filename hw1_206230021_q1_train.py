@@ -448,41 +448,6 @@ def main():
         kl_div_values.append(model_kl_value)
         kl_div_per_param_values.append(model_kl_value / count_model_parameters(net))
 
-    # model1, model1_kl = model_1_train_and_eval()  # --- Model 1 - without randomization, trained on the full MNIST dataset ---
-    # plot_model_kl_divergence(model1_kl, model=1)
-    # kl_div_value = kl_divergence_from_nn(model=model1)
-    # kl_div_values.append(kl_div_value)
-    # kl_div_per_param_values.append(kl_div_value / count_model_parameters(model1))
-    # models.append(model1)
-    #
-    # model2, model2_kl = model_2_train_and_eval()  # --- Model 2 - without randomization, trained on the first 200 examples ---
-    # plot_model_kl_divergence(model2_kl, model=2)
-    # kl_div_value = kl_divergence_from_nn(model=model2)
-    # kl_div_values.append(kl_div_value)
-    # kl_div_per_param_values.append(kl_div_value / count_model_parameters(model2))
-    # models.append(model2)
-    #
-    # model3, model3_kl = model_3_train_and_eval()  # --- Model 3 - without randomization, trained on the 200 first 3's and 8's ---
-    # plot_model_kl_divergence(model3_kl, model=3)
-    # kl_div_value = kl_divergence_from_nn(model=model3)
-    # kl_div_values.append(kl_div_value)
-    # kl_div_per_param_values.append(kl_div_value / count_model_parameters(model3))
-    # models.append(model3)
-    #
-    # model4, model4_kl = model_4_train_and_eval()  # -- Model 4 - without randomization, trained on all 3's and 8's ---
-    # plot_model_kl_divergence(model4_kl, model=4)
-    # kl_div_value = kl_divergence_from_nn(model=model4)
-    # kl_div_values.append(kl_div_value)
-    # kl_div_per_param_values.append(kl_div_value / count_model_parameters(model4))
-    # models.append(model4)
-    #
-    # model5, model5_kl = model_5_train_and_eval()  # --- Model 5 - Ber(0.5) labels, trained on the first 200 MNIST examples ---
-    # plot_model_kl_divergence(model5_kl, model=5)
-    # kl_div_value = kl_divergence_from_nn(model=model5)
-    # kl_div_values.append(kl_div_value)
-    # kl_div_per_param_values.append(kl_div_value / count_model_parameters(model5))
-    # models.append(model5)
-
     # Display KL Divergence values
     for i in range(5):
         print(f"Model {i + 1}'s KL Divergence: {kl_div_values[i]}; Per parameter: {kl_div_per_param_values[i]}")
