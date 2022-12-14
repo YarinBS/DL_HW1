@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from blitz.modules import BayesianLinear
 
-from hw1_206230021_q1_train import fetch_MNIST_data, plot_convergence_over_epochs, BayesianNeuralNetwork
+from hw1_206230021_q1_train import fetch_MNIST_data, plot_convergence_over_epochs, BayesianNeuralNetwork, save_models
 
 # --- Hyper-parameters ---
 BATCH_SIZE = 200  # For
@@ -48,6 +48,7 @@ class DeepBayesianNeuralNetwork(nn.Module):
 
 
 def main():
+    models = []
     # --- Model 1 - Unregularized Logistic Regression ---
     train_data, train_loader, test_data, test_loader = fetch_MNIST_data()
 
@@ -97,8 +98,11 @@ def main():
         test_accuracies_1.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
         test_losses_1.append(epoch_test_loss.item())
 
+    models.append(lr_model)
+
     # Plotting accuracy and loss graphs
-    plot_convergence_over_epochs(train_accuracies_1, test_accuracies_1, epochs=MINI_EPOCHS, mode='Accuracy', model=1)
+    plot_convergence_over_epochs(train_accuracies_1, test_accuracies_1, epochs=MINI_EPOCHS, mode='Accuracy', model=1,
+                                 question=3)
     # plot_convergence_over_epochs(train_losses_1, test_losses_1, epochs=MINI_EPOCHS, mode='CE Loss', model=1)
 
     # --- Model 2 - Regularized Logistic Regression ---
@@ -150,9 +154,11 @@ def main():
         test_accuracies_2.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
         test_losses_2.append(epoch_test_loss.item())
 
-    # Plotting accuracy and loss graphs
+    models.append(regularized_lr_model)
 
-    plot_convergence_over_epochs(train_accuracies_2, test_accuracies_2, epochs=MINI_EPOCHS, mode='Accuracy', model=2)
+    # Plotting accuracy and loss graphs
+    plot_convergence_over_epochs(train_accuracies_2, test_accuracies_2, epochs=MINI_EPOCHS, mode='Accuracy', model=2,
+                                 question=3)
     # plot_convergence_over_epochs(train_losses_2, test_losses_2, epochs=MINI_EPOCHS, mode='CE Loss', model=2)
 
     # --- Model 3 - BNN ---
@@ -205,8 +211,11 @@ def main():
         test_accuracies_3.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
         test_losses_3.append(epoch_test_loss.item())
 
+    models.append(bnn)
+
     # Plotting accuracy and loss graphs
-    plot_convergence_over_epochs(train_accuracies_3, test_accuracies_3, epochs=MINI_EPOCHS, mode='Accuracy', model=3)
+    plot_convergence_over_epochs(train_accuracies_3, test_accuracies_3, epochs=MINI_EPOCHS, mode='Accuracy', model=3,
+                                 question=3)
     # plot_convergence_over_epochs(train_losses_3, test_losses_3, epochs=MINI_EPOCHS, mode='CE Loss', model=3)
 
     # --- Model 4 - Deep BNN with hidden1 = 512, hidden2 = 100 ---
@@ -260,8 +269,11 @@ def main():
         test_accuracies_4.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
         test_losses_4.append(epoch_test_loss.item())
 
+    models.append(dbnn1)
+
     # Plotting accuracy and loss graphs
-    plot_convergence_over_epochs(train_accuracies_4, test_accuracies_4, epochs=MINI_EPOCHS, mode='Accuracy', model=4)
+    plot_convergence_over_epochs(train_accuracies_4, test_accuracies_4, epochs=MINI_EPOCHS, mode='Accuracy', model=4,
+                                 question=3)
     # plot_convergence_over_epochs(train_losses_4, test_losses_4, epochs=MINI_EPOCHS, mode='CE Loss', model=4)
 
     # --- Model 5 - Deep BNN with hidden1 = 250, hidden2 = 50 ---
@@ -315,9 +327,14 @@ def main():
         test_accuracies_5.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
         test_losses_5.append(epoch_test_loss.item())
 
+    models.append(dbnn2)
+
     # Plotting accuracy and loss graphs
-    plot_convergence_over_epochs(train_accuracies_5, test_accuracies_5, epochs=MINI_EPOCHS, mode='Accuracy', model=5)
+    plot_convergence_over_epochs(train_accuracies_5, test_accuracies_5, epochs=MINI_EPOCHS, mode='Accuracy', model=5,
+                                 question=3)
     # plot_convergence_over_epochs(train_losses_5, test_losses_5, epochs=MINI_EPOCHS, mode='CE Loss', model=5)
+
+    save_models(models)
 
 
 if __name__ == '__main__':

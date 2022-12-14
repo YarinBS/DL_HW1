@@ -92,18 +92,15 @@ def fetch_MNIST_data(filter=None, random_test_labels=False):
     return train_dataset, train_loader, test_dataset, test_loader
 
 
-def plot_convergence_over_epochs(train_list: list, test_list: list, epochs: int, mode: str, model: int) -> None:
+def plot_convergence_over_epochs(train_list: list, test_list: list, epochs: int, mode: str, model: int, question: int) -> None:
     plt.plot(range(1, epochs + 1), train_list)
     plt.plot(range(1, epochs + 1), test_list)
     plt.xlabel('Epochs')
     plt.ylabel(f'{mode}')
     plt.title(f"Model {model}'s {mode} over epochs")
     plt.legend(['Train', 'Test'])
+    plt.savefig(f"./plots/q{question}/q{question}_model_{model}_{mode.lower()}.png")
     plt.show()
-
-
-def count_model_parameters(model):
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
 def plot_model_kl_divergence(kl_values, model):
@@ -111,7 +108,12 @@ def plot_model_kl_divergence(kl_values, model):
     plt.xlabel("Epochs")
     plt.ylabel("KL Value")
     plt.title(f"Model {model}'s KL Divergence over epochs")
+    plt.savefig(f"./plots/q2/q2_model_{model}_kl_divergence.png")
     plt.show()
+
+
+def count_model_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
 def model_1_train_and_eval():
@@ -168,7 +170,7 @@ def model_1_train_and_eval():
         model1_kl_values.append(kl_divergence_from_nn(model=model_1).item())
 
     # Plotting accuracy and loss graphs
-    plot_convergence_over_epochs(train_accuracies_1, test_accuracies_1, epochs=MINI_EPOCHS, mode='Accuracy', model=1)
+    plot_convergence_over_epochs(train_accuracies_1, test_accuracies_1, epochs=MINI_EPOCHS, mode='Accuracy', model=1, question=2)
     # plot_convergence_over_epochs(train_losses_1, test_losses_1, epochs=MINI_EPOCHS, mode='CE Loss', model=1)
 
     return model_1, model1_kl_values
@@ -227,7 +229,7 @@ def model_2_train_and_eval():
         model2_kl_values.append(kl_divergence_from_nn(model=model_2).item())
 
     # Plotting accuracy and loss graphs
-    plot_convergence_over_epochs(train_accuracies_2, test_accuracies_2, epochs=EPOCHS, mode='Accuracy', model=2)
+    plot_convergence_over_epochs(train_accuracies_2, test_accuracies_2, epochs=EPOCHS, mode='Accuracy', model=2, question=2)
     # plot_convergence_over_epochs(train_losses_2, test_losses_2, epochs=EPOCHS, mode='CE Loss', model=2)
 
     return model_2, model2_kl_values
@@ -287,7 +289,7 @@ def model_3_train_and_eval():
         model3_kl_values.append(kl_divergence_from_nn(model=model_3).item())
 
     # Plotting accuracy and loss graphs
-    plot_convergence_over_epochs(train_accuracies_3, test_accuracies_3, epochs=EPOCHS, mode='Accuracy', model=3)
+    plot_convergence_over_epochs(train_accuracies_3, test_accuracies_3, epochs=EPOCHS, mode='Accuracy', model=3, question=2)
     # plot_convergence_over_epochs(train_losses_3, test_losses_3, epochs=EPOCHS, mode='CE Loss', model=3)
 
     return model_3, model3_kl_values
@@ -346,7 +348,7 @@ def model_4_train_and_eval():
         model4_kl_values.append(kl_divergence_from_nn(model=model_4).item())
 
     # Plotting accuracy and loss graphs
-    plot_convergence_over_epochs(train_accuracies_4, test_accuracies_4, epochs=MINI_EPOCHS, mode='Accuracy', model=4)
+    plot_convergence_over_epochs(train_accuracies_4, test_accuracies_4, epochs=MINI_EPOCHS, mode='Accuracy', model=4, question=2)
     # plot_convergence_over_epochs(train_losses_4, test_losses_4, epochs=MINI_EPOCHS, mode='CE Loss', model=4)
 
     return model_4, model4_kl_values
@@ -407,7 +409,7 @@ def model_5_train_and_eval():
         model5_kl_values.append(kl_divergence_from_nn(model=model_5).item())
 
     # Plotting accuracy and loss graphs
-    plot_convergence_over_epochs(train_accuracies_5, test_accuracies_5, epochs=EPOCHS, mode='Accuracy', model=5)
+    plot_convergence_over_epochs(train_accuracies_5, test_accuracies_5, epochs=EPOCHS, mode='Accuracy', model=5, question=2)
     # plot_convergence_over_epochs(train_losses_5, test_losses_5, epochs=EPOCHS, mode='CE Loss', model=5)
 
     return model_5, model5_kl_values
@@ -415,7 +417,7 @@ def model_5_train_and_eval():
 
 def save_models(models: list):
     for i in range(len(models)):
-        with open(f"q{i + 1}_model_1.pkl", "wb") as f:
+        with open(f"./models/q2/q2_model_{i + 1}.pkl", "wb") as f:
             pickle.dump(models[i], f)
 
 
