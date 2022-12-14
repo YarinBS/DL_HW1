@@ -12,7 +12,6 @@ import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 from blitz.modules import BayesianLinear
-from blitz.utils import variational_estimator
 from blitz.losses import kl_divergence_from_nn
 
 # --- Hyper-parameters ---
@@ -21,11 +20,12 @@ MINI_EPOCHS = 10
 EPOCHS = 75
 
 
-def fetch_MNIST_data(filter=None):
+def fetch_MNIST_data(filter=None, random_test_labels=False):
     """
     Fetching PyTorch's MNIST dataset.
     Can also filter the fetched training/test data by digits.
     :param filter: None (default) or list of digits to keep in the training/test set
+    :param random_test_labels: False (default). If True, sets Ber(0.5) labels (0 or 1) to the test data
     :return: train/test dataset/loader
     """
     # Transform the image data into Tensor
@@ -44,6 +44,9 @@ def fetch_MNIST_data(filter=None):
                                       train=False,
                                       transform=transform,
                                       download=True)
+
+        if random_test_labels:
+            test_dataset.targets = torch.bernoulli(torch.full(test_dataset.targets.shape, 0.5))
 
         # Data Loader (Input Pipeline)
         train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
@@ -99,8 +102,16 @@ def plot_convergence_over_epochs(train_list: list, test_list: list, epochs: int,
     plt.show()
 
 
-def count_parameters(model):
+def count_model_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
+def plot_model_kl_divergence(kl_values, model):
+    plt.plot(range(1, len(kl_values) + 1), kl_values)
+    plt.xlabel("Epochs")
+    plt.ylabel("KL Value")
+    plt.title(f"Model {model}'s KL Divergence over epochs")
+    plt.show()
 
 
 def model_1_train_and_eval():
@@ -115,6 +126,7 @@ def model_1_train_and_eval():
     optimizer = torch.optim.Adam(model_1.parameters())
 
     train_accuracies_1, train_losses_1, test_accuracies_1, test_losses_1 = [], [], [], []
+    model1_kl_values = []
     for i in range(MINI_EPOCHS):  # Running EPOCH times over the entire dataset
         print(f'Epoch {i + 1}...')
         epoch_train_loss, epoch_test_loss = 0, 0
@@ -153,11 +165,13 @@ def model_1_train_and_eval():
         test_accuracies_1.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
         test_losses_1.append(epoch_test_loss.item())
 
+        model1_kl_values.append(kl_divergence_from_nn(model=model_1).item())
+
     # Plotting accuracy and loss graphs
     plot_convergence_over_epochs(train_accuracies_1, test_accuracies_1, epochs=MINI_EPOCHS, mode='Accuracy', model=1)
     # plot_convergence_over_epochs(train_losses_1, test_losses_1, epochs=MINI_EPOCHS, mode='CE Loss', model=1)
 
-    return model_1
+    return model_1, model1_kl_values
 
 
 def model_2_train_and_eval():
@@ -175,6 +189,7 @@ def model_2_train_and_eval():
     train_images = train_images.view(-1, 28 * 28)
 
     train_accuracies_2, train_losses_2, test_accuracies_2, test_losses_2 = [], [], [], []
+    model2_kl_values = []
     for i in range(EPOCHS):
         print(f'Epoch {i + 1}...')
         epoch_train_loss, epoch_test_loss = 0, 0
@@ -209,11 +224,13 @@ def model_2_train_and_eval():
         test_accuracies_2.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
         test_losses_2.append(epoch_test_loss.item())
 
+        model2_kl_values.append(kl_divergence_from_nn(model=model_2).item())
+
     # Plotting accuracy and loss graphs
     plot_convergence_over_epochs(train_accuracies_2, test_accuracies_2, epochs=EPOCHS, mode='Accuracy', model=2)
     # plot_convergence_over_epochs(train_losses_2, test_losses_2, epochs=EPOCHS, mode='CE Loss', model=2)
 
-    return model_2
+    return model_2, model2_kl_values
 
 
 def model_3_train_and_eval():
@@ -228,6 +245,7 @@ def model_3_train_and_eval():
     optimizer = torch.optim.Adam(model_3.parameters())
 
     train_accuracies_3, train_losses_3, test_accuracies_3, test_losses_3 = [], [], [], []
+    model3_kl_values = []
 
     train_images, train_labels = next(iter(train_loader))  # Fetching the first 200 training samples
     train_images = train_images.view(-1, 28 * 28)
@@ -266,11 +284,13 @@ def model_3_train_and_eval():
         test_accuracies_3.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
         test_losses_3.append(epoch_test_loss.item())
 
+        model3_kl_values.append(kl_divergence_from_nn(model=model_3).item())
+
     # Plotting accuracy and loss graphs
     plot_convergence_over_epochs(train_accuracies_3, test_accuracies_3, epochs=EPOCHS, mode='Accuracy', model=3)
     # plot_convergence_over_epochs(train_losses_3, test_losses_3, epochs=EPOCHS, mode='CE Loss', model=3)
 
-    return model_3
+    return model_3, model3_kl_values
 
 
 def model_4_train_and_eval():
@@ -285,6 +305,7 @@ def model_4_train_and_eval():
     optimizer = torch.optim.Adam(model_4.parameters())
 
     train_accuracies_4, train_losses_4, test_accuracies_4, test_losses_4 = [], [], [], []
+    model4_kl_values = []
     for i in range(MINI_EPOCHS):  # Running EPOCH times over the entire dataset
         print(f'Epoch {i + 1}...')
         epoch_train_loss, epoch_test_loss = 0, 0
@@ -322,15 +343,17 @@ def model_4_train_and_eval():
         test_accuracies_4.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
         test_losses_4.append(epoch_test_loss.item())
 
+        model4_kl_values.append(kl_divergence_from_nn(model=model_4).item())
+
     # Plotting accuracy and loss graphs
     plot_convergence_over_epochs(train_accuracies_4, test_accuracies_4, epochs=MINI_EPOCHS, mode='Accuracy', model=4)
     # plot_convergence_over_epochs(train_losses_4, test_losses_4, epochs=MINI_EPOCHS, mode='CE Loss', model=4)
 
-    return model_4
+    return model_4, model4_kl_values
 
 
 def model_5_train_and_eval():
-    train_data, train_loader, test_data, test_loader = fetch_MNIST_data()
+    train_data, train_loader, test_data, test_loader = fetch_MNIST_data(random_test_labels=True)
 
     print(" --- Model 5 - Ber(0.5) labels, trained on the first 200 MNIST examples ---")
     model_5 = BayesianNeuralNetwork(input_size=28 * 28,
@@ -345,6 +368,7 @@ def model_5_train_and_eval():
     train_labels = torch.bernoulli(torch.full((200,), 0.5))
 
     train_accuracies_5, train_losses_5, test_accuracies_5, test_losses_5 = [], [], [], []
+    model5_kl_values = []
     for i in range(EPOCHS):
         print(f'Epoch {i + 1}...')
         epoch_train_loss, epoch_test_loss = 0, 0
@@ -368,7 +392,7 @@ def model_5_train_and_eval():
         # Evaluation after each epoch
         for (test_images, test_labels) in test_loader:
             test_images = test_images.view(-1, 28 * 28)
-            test_labels = torch.bernoulli(torch.full((200,), 0.5))
+            # test_labels = torch.bernoulli(torch.full((200,), 0.5))
             test_outputs = model_5(test_images)
             test_predictions = torch.argmax(test_outputs, dim=1)
             current_test_accuracies.append(((test_predictions == test_labels).sum().item()) / test_labels.size(0))
@@ -380,11 +404,19 @@ def model_5_train_and_eval():
         test_accuracies_5.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
         test_losses_5.append(epoch_test_loss.item())
 
+        model5_kl_values.append(kl_divergence_from_nn(model=model_5).item())
+
     # Plotting accuracy and loss graphs
     plot_convergence_over_epochs(train_accuracies_5, test_accuracies_5, epochs=EPOCHS, mode='Accuracy', model=5)
     # plot_convergence_over_epochs(train_losses_5, test_losses_5, epochs=EPOCHS, mode='CE Loss', model=5)
 
-    return model_5
+    return model_5, model5_kl_values
+
+
+def save_models(models: list):
+    for i in range(len(models)):
+        with open(f"q{i + 1}_model_1.pkl", "wb") as f:
+            pickle.dump(models[i], f)
 
 
 class BayesianNeuralNetwork(nn.Module):
@@ -403,36 +435,60 @@ def main():
     kl_div_values = []
     kl_div_per_param_values = []
 
-    model1 = model_1_train_and_eval()  # --- Model 1 - without randomization, trained on the full MNIST dataset ---
-    kl_div_value = kl_divergence_from_nn(model=model1)
-    kl_div_values.append(kl_div_value)
-    kl_div_per_param_values.append(kl_div_value / count_parameters(model1))
+    models = []
 
-    model2 = model_2_train_and_eval()  # --- Model 2 - without randomization, trained on the first 200 examples ---
-    kl_div_value = kl_divergence_from_nn(model=model2)
-    kl_div_values.append(kl_div_value)
-    kl_div_per_param_values.append(kl_div_value / count_parameters(model2))
+    model_functions = ['model_1_train_and_eval()', 'model_2_train_and_eval()', 'model_3_train_and_eval()',
+                       'model_4_train_and_eval()', 'model_5_train_and_eval()']
 
-    model3 = model_3_train_and_eval()  # --- Model 3 - without randomization, trained on the 200 first 3's and 8's ---
-    kl_div_value = kl_divergence_from_nn(model=model3)
-    kl_div_values.append(kl_div_value)
-    kl_div_per_param_values.append(kl_div_value / count_parameters(model3))
+    for i in range(len(model_functions)):
+        net, values = eval(model_functions[i])  # The eval() function evaluates a given string as a function
+        models.append(net)
+        plot_model_kl_divergence(values, model=i + 1)
+        model_kl_value = kl_divergence_from_nn(model=net)
+        kl_div_values.append(model_kl_value)
+        kl_div_per_param_values.append(model_kl_value / count_model_parameters(net))
 
-    model4 = model_4_train_and_eval()  # -- Model 4 - without randomization, trained on all 3's and 8's ---
-    kl_div_value = kl_divergence_from_nn(model=model4)
-    kl_div_values.append(kl_div_value)
-    kl_div_per_param_values.append(kl_div_value / count_parameters(model4))
-
-    model5 = model_5_train_and_eval()  # --- Model 5 - Ber(0.5) labels, trained on the first 200 MNIST examples ---
-    kl_div_value = kl_divergence_from_nn(model=model5)
-    kl_div_values.append(kl_div_value)
-    kl_div_per_param_values.append(kl_div_value / count_parameters(model5))
+    # model1, model1_kl = model_1_train_and_eval()  # --- Model 1 - without randomization, trained on the full MNIST dataset ---
+    # plot_model_kl_divergence(model1_kl, model=1)
+    # kl_div_value = kl_divergence_from_nn(model=model1)
+    # kl_div_values.append(kl_div_value)
+    # kl_div_per_param_values.append(kl_div_value / count_model_parameters(model1))
+    # models.append(model1)
+    #
+    # model2, model2_kl = model_2_train_and_eval()  # --- Model 2 - without randomization, trained on the first 200 examples ---
+    # plot_model_kl_divergence(model2_kl, model=2)
+    # kl_div_value = kl_divergence_from_nn(model=model2)
+    # kl_div_values.append(kl_div_value)
+    # kl_div_per_param_values.append(kl_div_value / count_model_parameters(model2))
+    # models.append(model2)
+    #
+    # model3, model3_kl = model_3_train_and_eval()  # --- Model 3 - without randomization, trained on the 200 first 3's and 8's ---
+    # plot_model_kl_divergence(model3_kl, model=3)
+    # kl_div_value = kl_divergence_from_nn(model=model3)
+    # kl_div_values.append(kl_div_value)
+    # kl_div_per_param_values.append(kl_div_value / count_model_parameters(model3))
+    # models.append(model3)
+    #
+    # model4, model4_kl = model_4_train_and_eval()  # -- Model 4 - without randomization, trained on all 3's and 8's ---
+    # plot_model_kl_divergence(model4_kl, model=4)
+    # kl_div_value = kl_divergence_from_nn(model=model4)
+    # kl_div_values.append(kl_div_value)
+    # kl_div_per_param_values.append(kl_div_value / count_model_parameters(model4))
+    # models.append(model4)
+    #
+    # model5, model5_kl = model_5_train_and_eval()  # --- Model 5 - Ber(0.5) labels, trained on the first 200 MNIST examples ---
+    # plot_model_kl_divergence(model5_kl, model=5)
+    # kl_div_value = kl_divergence_from_nn(model=model5)
+    # kl_div_values.append(kl_div_value)
+    # kl_div_per_param_values.append(kl_div_value / count_model_parameters(model5))
+    # models.append(model5)
 
     # Display KL Divergence values
     for i in range(5):
         print(f"Model {i + 1}'s KL Divergence: {kl_div_values[i]}; Per parameter: {kl_div_per_param_values[i]}")
 
-    # TODO: Plot a graph of KL values over epochs
+    # Save models to .pkl files
+    save_models(models)
 
 
 if __name__ == '__main__':
