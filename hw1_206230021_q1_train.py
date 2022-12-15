@@ -20,11 +20,11 @@ MINI_EPOCHS = 10
 EPOCHS = 75
 
 
-def fetch_MNIST_data(filter=None, random_test_labels=False):
+def fetch_MNIST_data(filter_labels=None, random_test_labels=False):
     """
     Fetching PyTorch's MNIST dataset.
     Can also filter the fetched training/test data by digits.
-    :param filter: None (default) or list of digits to keep in the training/test set
+    :param filter_labels: None (default) or list of digits to keep in the training/test set
     :param random_test_labels: False (default). If True, sets Ber(0.5) labels (0 or 1) to the test data
     :return: train/test dataset/loader
     """
@@ -34,7 +34,7 @@ def fetch_MNIST_data(filter=None, random_test_labels=False):
         transforms.Normalize((0.5,), (0.5,))
     ])
 
-    if not filter:  # Get the entire dataset
+    if not filter_labels:  # Get the entire dataset
         train_dataset = datasets.MNIST(root='./data/',
                                        train=True,
                                        transform=transform,
@@ -64,7 +64,7 @@ def fetch_MNIST_data(filter=None, random_test_labels=False):
                                        download=True)
 
         # Filtering the training data
-        filter_indices = np.where((train_dataset.targets == filter[0]) | (train_dataset.targets == filter[1]))
+        filter_indices = np.where((train_dataset.targets == filter_labels[0]) | (train_dataset.targets == filter_labels[1]))
         # filter_indices = np.where(train_dataset.targets in filter)
         train_dataset.data = train_dataset.data[filter_indices[0], :, :]
         train_dataset.targets = train_dataset.targets[filter_indices]
@@ -75,7 +75,7 @@ def fetch_MNIST_data(filter=None, random_test_labels=False):
                                       download=True)
 
         # Filtering the test data
-        filter_indices = np.where((test_dataset.targets == filter[0]) | (test_dataset.targets == filter[1]))
+        filter_indices = np.where((test_dataset.targets == filter_labels[0]) | (test_dataset.targets == filter_labels[1]))
         # filter_indices = np.where(train_dataset.targets in filter)
         test_dataset.data = test_dataset.data[filter_indices[0], :, :]
         test_dataset.targets = test_dataset.targets[filter_indices]
@@ -116,7 +116,7 @@ def count_model_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
-def model_1_train_and_eval():
+def model_1_train_and_test():
     train_data, train_loader, test_data, test_loader = fetch_MNIST_data()
 
     print("--- Model 1 - without randomization, trained on the full MNIST dataset ---")
@@ -176,7 +176,7 @@ def model_1_train_and_eval():
     return model_1, model1_kl_values
 
 
-def model_2_train_and_eval():
+def model_2_train_and_test():
     train_data, train_loader, test_data, test_loader = fetch_MNIST_data()
 
     print(" --- Model 2 - without randomization, trained on the first 200 examples ---")
@@ -235,8 +235,8 @@ def model_2_train_and_eval():
     return model_2, model2_kl_values
 
 
-def model_3_train_and_eval():
-    train_data, train_loader, test_data, test_loader = fetch_MNIST_data([3, 8])
+def model_3_train_and_test():
+    train_data, train_loader, test_data, test_loader = fetch_MNIST_data(filter_labels=[3, 8])
 
     print("--- Model 3 - without randomization, trained on the 200 first 3's and 8's ---")
     model_3 = BayesianNeuralNetwork(input_size=28 * 28,
@@ -295,8 +295,8 @@ def model_3_train_and_eval():
     return model_3, model3_kl_values
 
 
-def model_4_train_and_eval():
-    train_data, train_loader, test_data, test_loader = fetch_MNIST_data([3, 8])
+def model_4_train_and_test():
+    train_data, train_loader, test_data, test_loader = fetch_MNIST_data(filter_labels=[3, 8])
 
     print("--- Model 4 - without randomization, trained on all 3's and 8's ---")
     model_4 = BayesianNeuralNetwork(input_size=28 * 28,
@@ -354,7 +354,7 @@ def model_4_train_and_eval():
     return model_4, model4_kl_values
 
 
-def model_5_train_and_eval():
+def model_5_train_and_test():
     train_data, train_loader, test_data, test_loader = fetch_MNIST_data(random_test_labels=True)
 
     print(" --- Model 5 - Ber(0.5) labels, trained on the first 200 MNIST examples ---")
@@ -439,8 +439,8 @@ def main():
 
     models = []
 
-    model_functions = ['model_1_train_and_eval()', 'model_2_train_and_eval()', 'model_3_train_and_eval()',
-                       'model_4_train_and_eval()', 'model_5_train_and_eval()']
+    model_functions = ['model_1_train_and_test()', 'model_2_train_and_test()', 'model_3_train_and_test()',
+                       'model_4_train_and_test()', 'model_5_train_and_test()']
 
     for i in range(len(model_functions)):
         net, values = eval(model_functions[i])  # The eval() function evaluates a given string as a function
