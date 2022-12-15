@@ -342,7 +342,7 @@ def main():
                        'model_4_train_and_test()', 'model_5_train_and_test()']
 
     for i in range(len(model_functions)):
-        model = eval(model_functions[i])
+        model, _ = eval(model_functions[i])
         models.append(model)
 
     save_models(models)
