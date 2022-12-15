@@ -312,9 +312,7 @@ class LogisticRegressionClassifier(nn.Module):
 
     def forward(self, x):
         x_ = self.layer1(x)
-        outputs = torch.sigmoid(x_)
-        return outputs
-        # return x_
+        return x_
 
 
 class DeepBayesianNeuralNetwork(nn.Module):
