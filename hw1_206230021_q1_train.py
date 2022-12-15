@@ -12,13 +12,19 @@ import torch.nn.functional as F
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
+import winsound
 from blitz.modules import BayesianLinear
 from blitz.losses import kl_divergence_from_nn
 
 # --- Hyper-parameters ---
 BATCH_SIZE = 200
-MINI_EPOCHS = 15
+MINI_EPOCHS = 20
 EPOCHS = 75
+BIG_EPOCHS = 100
+
+# --- Sound constants ---
+DURATION = 1500  # milliseconds
+FREQ = 750  # Hz
 
 
 def fetch_MNIST_data(filter_labels=None, random_test_labels=False):
@@ -128,7 +134,7 @@ def model_1_train_and_test(epochs=MINI_EPOCHS):
 
     print("--- Model 1 - without randomization, trained on the full MNIST dataset ---")
     model_1 = BayesianNeuralNetwork(input_size=28 * 28,
-                                    hidden_size=512,
+                                    hidden_size=150,
                                     output_size=10)
 
     loss = nn.CrossEntropyLoss()
@@ -189,7 +195,7 @@ def model_2_train_and_test(epochs=EPOCHS):
 
     print(" --- Model 2 - without randomization, trained on the first 200 examples ---")
     model_2 = BayesianNeuralNetwork(input_size=28 * 28,
-                                    hidden_size=512,
+                                    hidden_size=150,
                                     output_size=10)
 
     loss = nn.CrossEntropyLoss()
@@ -244,12 +250,12 @@ def model_2_train_and_test(epochs=EPOCHS):
     return model_2, model2_kl_values
 
 
-def model_3_train_and_test(epochs=EPOCHS):
+def model_3_train_and_test(epochs=MINI_EPOCHS):
     train_data, train_loader, test_data, test_loader = fetch_MNIST_data(filter_labels=[3, 8])
 
     print("--- Model 3 - without randomization, trained on the 200 first 3's and 8's ---")
     model_3 = BayesianNeuralNetwork(input_size=28 * 28,
-                                    hidden_size=512,
+                                    hidden_size=150,
                                     output_size=2)
 
     loss = nn.CrossEntropyLoss()
@@ -310,7 +316,7 @@ def model_4_train_and_test(epochs=MINI_EPOCHS):
 
     print("--- Model 4 - without randomization, trained on all 3's and 8's ---")
     model_4 = BayesianNeuralNetwork(input_size=28 * 28,
-                                    hidden_size=512,
+                                    hidden_size=150,
                                     output_size=2)
 
     loss = nn.CrossEntropyLoss()
@@ -365,12 +371,12 @@ def model_4_train_and_test(epochs=MINI_EPOCHS):
     return model_4, model4_kl_values
 
 
-def model_5_train_and_test(epochs=EPOCHS):
+def model_5_train_and_test(epochs=BIG_EPOCHS):
     train_data, train_loader, test_data, test_loader = fetch_MNIST_data(random_test_labels=True)
 
     print(" --- Model 5 - Ber(0.5) labels, trained on the first 200 MNIST examples ---")
     model_5 = BayesianNeuralNetwork(input_size=28 * 28,
-                                    hidden_size=512,
+                                    hidden_size=150,
                                     output_size=2)
 
     loss = nn.CrossEntropyLoss()
@@ -405,7 +411,6 @@ def model_5_train_and_test(epochs=EPOCHS):
         # Evaluation after each epoch
         for (test_images, test_labels) in test_loader:
             test_images = test_images.view(-1, 28 * 28)
-            # test_labels = torch.bernoulli(torch.full((200,), 0.5))
             test_outputs = model_5(test_images)
             test_predictions = torch.argmax(test_outputs, dim=1)
             current_test_accuracies.append(((test_predictions == test_labels).sum().item()) / test_labels.size(0))
@@ -472,10 +477,12 @@ def main():
         with open('kl_values', 'a') as f:
             f.write(f'Model {i + 1} KL Divergence: {kl_div_values[i]}\n')
             f.write(f'Model {i + 1} KL Divergence per parameter: {kl_div_per_param_values[i]}\n')
-        # print(f"Model {i + 1}'s KL Divergence: {kl_div_values[i]}; Per parameter: {kl_div_per_param_values[i]}")
+        print(f"Model {i + 1}'s KL Divergence: {kl_div_values[i]}; Per parameter: {kl_div_per_param_values[i]}")
 
     # Save models to .pkl files
     save_models(models)
+
+    winsound.Beep(FREQ, DURATION)
 
 
 if __name__ == '__main__':
