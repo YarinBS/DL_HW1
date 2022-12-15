@@ -5,6 +5,7 @@ https://github.com/piEsposito/blitz-bayesian-deep-learning
 
 import pickle
 import numpy as np
+import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -99,7 +100,8 @@ def plot_convergence_over_epochs(train_list: list, test_list: list, epochs: int,
     plt.ylabel(f'{mode}')
     plt.title(f"Model {model}'s {mode} over epochs")
     plt.legend(['Train', 'Test'])
-    plt.savefig(f"./plots/q{question}/q{question}_model_{model}_{mode.lower()}.png")
+    if 'hw1_206230021_q1_train' not in sys.modules:  # If this file is imported, don't save the plot
+        plt.savefig(f"./plots/q{question}/q{question}_model_{model}_{mode.lower()}.png")
     plt.show()
 
 
