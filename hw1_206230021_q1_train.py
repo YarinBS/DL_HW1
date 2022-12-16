@@ -13,6 +13,7 @@ import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 import winsound
+import os
 from blitz.modules import BayesianLinear
 from blitz.losses import kl_divergence_from_nn
 from blitz.utils import variational_estimator
@@ -104,24 +105,19 @@ def fetch_MNIST_data(filter_labels=None, random_test_labels=False):
     return train_dataset, train_loader, test_dataset, test_loader
 
 
-def plot_convergence_over_epochs(train_list: list, test_list: list, epochs: int, mode: str, model: int, question: int):
-    plt.plot(range(1, epochs + 1), train_list)
-    plt.plot(range(1, epochs + 1), test_list)
+def plot_convergence(train_or_kl_list, test_list, epochs, mode, model, question):
+    if mode == 'Accuracy':
+        plt.plot(range(1, epochs + 1), train_or_kl_list)
+        plt.plot(range(1, epochs + 1), test_list)
+        plt.legend(['Train', 'Test'])
+    else:
+        plt.plot(range(1, epochs + 1), train_or_kl_list)
+
     plt.xlabel('Epochs')
     plt.ylabel(f'{mode}')
-    plt.title(f"Model {model}'s {mode} over epochs")
-    plt.legend(['Train', 'Test'])
-    if 'hw1_206230021_q1_train' in sys.modules:  # If this file is imported, don't save the plot
+    plt.title(f"Questions {question} - Model {model}'s {mode} over epochs")
+    if 'hw1_206230021_q1_train' in sys.modules:  # If this .py file is imported, save the plot
         plt.savefig(f"./plots/q{question}/q{question}_model_{model}_{mode.lower()}.png")
-    plt.show()
-
-
-def plot_model_kl_divergence(kl_values, model):
-    plt.plot(range(1, len(kl_values) + 1), kl_values)
-    plt.xlabel("Epochs")
-    plt.ylabel("KL Value")
-    plt.title(f"Model {model}'s KL Divergence over epochs")
-    plt.savefig(f"./plots/q2/q2_model_{model}_kl_divergence.png")
     plt.show()
 
 
@@ -143,7 +139,7 @@ def model_1_train_and_test(epochs=MINI_EPOCHS):
     train_accuracies_1, test_accuracies_1 = [], []
     model1_kl_values = []
     for i in range(epochs):  # Running EPOCH times over the entire dataset
-        print(f'Epoch {i + 1}...')
+        print(f'Epoch [{i + 1}/{epochs}]...', end=' ')
         current_train_accuracies, current_test_accuracies = [], []
         # Training phase
         for (train_images, train_labels) in train_loader:
@@ -167,21 +163,25 @@ def model_1_train_and_test(epochs=MINI_EPOCHS):
             loss.backward()
             optimizer.step()
 
-        # # Evaluation after each epoch
-        # for (test_images, test_labels) in test_loader:
-        #     test_images = test_images.view(-1, 28 * 28)
-        #     test_outputs = model_1(test_images)
-        #     test_predictions = torch.argmax(test_outputs, dim=1)
-        #     current_test_accuracies.append(((test_predictions == test_labels).sum().item()) / test_labels.size(0))
+        # Evaluation after each epoch
+        for (test_images, test_labels) in test_loader:
+            test_images = test_images.view(-1, 28 * 28)
+            test_outputs = model_1(test_images)
+            test_predictions = torch.argmax(test_outputs, dim=1)
+            current_test_accuracies.append(((test_predictions == test_labels).sum().item()) / test_labels.size(0))
 
         train_accuracies_1.append(100 * (sum(current_train_accuracies) / len(current_train_accuracies)))
-        # test_accuracies_1.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
+        test_accuracies_1.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
 
         model1_kl_values.append(kl_divergence_from_nn(model=model_1).item())
 
-    # # Plotting accuracy over epochs
-    # plot_convergence_over_epochs(train_accuracies_1, test_accuracies_1, epochs=epochs, mode='Accuracy', model=1,
-    #                              question=2)
+        print(f"Train Accuracy: {round(train_accuracies_1[-1], 3)}%, Test Accuracy: {round(test_accuracies_1[-1], 3)}%")
+
+    # Plotting accuracy and KL divergence over epochs
+    plot_convergence(train_or_kl_list=train_accuracies_1, test_list=test_accuracies_1, epochs=epochs, mode='Accuracy',
+                     model=1, question=2)
+    plot_convergence(train_or_kl_list=model1_kl_values, test_list=[], epochs=epochs, mode='KL Divergence', model=1,
+                     question=2)
 
     return model_1, model1_kl_values
 
@@ -203,8 +203,7 @@ def model_2_train_and_test(epochs=EPOCHS):
     train_accuracies_2, test_accuracies_2 = [], []
     model2_kl_values = []
     for i in range(epochs):
-        print(f'Epoch {i + 1}...')
-        epoch_train_loss, epoch_test_loss = 0, 0
+        print(f'Epoch [{i + 1}/{epochs}]...', end=' ')
         current_train_accuracies, current_test_accuracies = [], []
 
         optimizer.zero_grad()  # https://stackoverflow.com/questions/48001598/why-do-we-need-to-call-zero-grad-in-pytorch
@@ -223,21 +222,25 @@ def model_2_train_and_test(epochs=EPOCHS):
         loss.backward()
         optimizer.step()
 
-        # # Evaluation after each epoch
-        # for (test_images, test_labels) in test_loader:
-        #     test_images = test_images.view(-1, 28 * 28)
-        #     test_outputs = model_2(test_images)
-        #     test_predictions = torch.argmax(test_outputs, dim=1)
-        #     current_test_accuracies.append(((test_predictions == test_labels).sum().item()) / test_labels.size(0))
+        # Evaluation after each epoch
+        for (test_images, test_labels) in test_loader:
+            test_images = test_images.view(-1, 28 * 28)
+            test_outputs = model_2(test_images)
+            test_predictions = torch.argmax(test_outputs, dim=1)
+            current_test_accuracies.append(((test_predictions == test_labels).sum().item()) / test_labels.size(0))
 
         train_accuracies_2.append(100 * (sum(current_train_accuracies) / len(current_train_accuracies)))
-        # test_accuracies_2.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
+        test_accuracies_2.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
 
         model2_kl_values.append(kl_divergence_from_nn(model=model_2).item())
 
-    # # Plotting accuracy over epochs
-    # plot_convergence_over_epochs(train_accuracies_2, test_accuracies_2, epochs=epochs, mode='Accuracy', model=2,
-    #                              question=2)
+        print(f"Train Accuracy: {round(train_accuracies_2[-1], 3)}%, Test Accuracy: {round(test_accuracies_2[-1], 3)}%")
+
+    # Plotting accuracy and KL divergence over epochs
+    plot_convergence(train_or_kl_list=train_accuracies_2, test_list=test_accuracies_2, epochs=epochs, mode='Accuracy',
+                     model=2, question=2)
+    plot_convergence(train_or_kl_list=model2_kl_values, test_list=[], epochs=epochs, mode='KL Divergence', model=2,
+                     question=2)
 
     return model_2, model2_kl_values
 
@@ -260,8 +263,7 @@ def model_3_train_and_test(epochs=MINI_EPOCHS):
     train_images = train_images.view(-1, 28 * 28)
 
     for i in range(epochs):
-        print(f'Epoch {i + 1}...')
-        epoch_train_loss, epoch_test_loss = 0, 0
+        print(f'Epoch [{i + 1}/{epochs}]...', end=' ')
         current_train_accuracies, current_test_accuracies = [], []
 
         optimizer.zero_grad()  # https://stackoverflow.com/questions/48001598/why-do-we-need-to-call-zero-grad-in-pytorch
@@ -280,21 +282,25 @@ def model_3_train_and_test(epochs=MINI_EPOCHS):
         loss.backward()
         optimizer.step()
 
-        # # Evaluation after each epoch
-        # for (test_images, test_labels) in test_loader:
-        #     test_images = test_images.view(-1, 28 * 28)
-        #     test_outputs = model_3(test_images)
-        #     test_predictions = torch.argmax(test_outputs, dim=1)
-        #     current_test_accuracies.append(((test_predictions == test_labels).sum().item()) / test_labels.size(0))
+        # Evaluation after each epoch
+        for (test_images, test_labels) in test_loader:
+            test_images = test_images.view(-1, 28 * 28)
+            test_outputs = model_3(test_images)
+            test_predictions = torch.argmax(test_outputs, dim=1)
+            current_test_accuracies.append(((test_predictions == test_labels).sum().item()) / test_labels.size(0))
 
         train_accuracies_3.append(100 * (sum(current_train_accuracies) / len(current_train_accuracies)))
-        # test_accuracies_3.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
+        test_accuracies_3.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
 
         model3_kl_values.append(kl_divergence_from_nn(model=model_3).item())
 
-    # # Plotting accuracy and loss graphs
-    # plot_convergence_over_epochs(train_accuracies_3, test_accuracies_3, epochs=epochs, mode='Accuracy', model=3,
-    #                              question=2)
+        print(f"Train Accuracy: {round(train_accuracies_3[-1], 3)}%, Test Accuracy: {round(test_accuracies_3[-1], 3)}%")
+
+    # Plotting accuracy and KL divergence over epochs
+    plot_convergence(train_or_kl_list=train_accuracies_3, test_list=test_accuracies_3, epochs=epochs, mode='Accuracy',
+                     model=3, question=2)
+    plot_convergence(train_or_kl_list=model3_kl_values, test_list=[], epochs=epochs, mode='KL Divergence', model=3,
+                     question=2)
 
     return model_3, model3_kl_values
 
@@ -312,13 +318,12 @@ def model_4_train_and_test(epochs=MINI_EPOCHS):
 
     train_accuracies_4, test_accuracies_4 = [], []
     model4_kl_values = []
-    for i in range(epochs):  # Running EPOCH times over the entire dataset
-        print(f'Epoch {i + 1}...')
-        epoch_train_loss, epoch_test_loss = 0, 0
+    for i in range(epochs):
+        print(f'Epoch [{i + 1}/{epochs}]...', end=' ')
         current_train_accuracies, current_test_accuracies = [], []
         # Training phase
         for (train_images, train_labels) in train_loader:
-            train_images = train_images.view(-1, 28 * 28)  # Fitting the image
+            train_images = train_images.view(-1, 28 * 28)
 
             optimizer.zero_grad()  # https://stackoverflow.com/questions/48001598/why-do-we-need-to-call-zero-grad-in-pytorch
             loss = model_4.sample_elbo(inputs=train_images,
@@ -327,7 +332,7 @@ def model_4_train_and_test(epochs=MINI_EPOCHS):
                                        sample_nbr=3,
                                        complexity_cost_weight=1 / 50000)
 
-            train_outputs = model_4(train_images)  # Getting model output for the current train batch
+            train_outputs = model_4(train_images)
             train_predictions = torch.argmax(train_outputs, dim=1)
 
             current_train_accuracies.append(((train_predictions == train_labels).sum().item()) / train_labels.size(0))
@@ -336,21 +341,25 @@ def model_4_train_and_test(epochs=MINI_EPOCHS):
             loss.backward()
             optimizer.step()
 
-        # # Evaluation after each epoch
-        # for (test_images, test_labels) in test_loader:
-        #     test_images = test_images.view(-1, 28 * 28)
-        #     test_outputs = model_4(test_images)
-        #     test_predictions = torch.argmax(test_outputs, dim=1)
-        #     current_test_accuracies.append(((test_predictions == test_labels).sum().item()) / test_labels.size(0))
+        # Evaluation after each epoch
+        for (test_images, test_labels) in test_loader:
+            test_images = test_images.view(-1, 28 * 28)
+            test_outputs = model_4(test_images)
+            test_predictions = torch.argmax(test_outputs, dim=1)
+            current_test_accuracies.append(((test_predictions == test_labels).sum().item()) / test_labels.size(0))
 
         train_accuracies_4.append(100 * (sum(current_train_accuracies) / len(current_train_accuracies)))
-        # test_accuracies_4.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
+        test_accuracies_4.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
 
         model4_kl_values.append(kl_divergence_from_nn(model=model_4).item())
 
-    # # Plotting accuracy and loss graphs
-    # plot_convergence_over_epochs(train_accuracies_4, test_accuracies_4, epochs=epochs, mode='Accuracy', model=4,
-    #                              question=2)
+        print(f"Train Accuracy: {round(train_accuracies_4[-1], 3)}%, Test Accuracy: {round(test_accuracies_4[-1], 3)}%")
+
+    # Plotting accuracy and KL divergence over epochs
+    plot_convergence(train_or_kl_list=train_accuracies_4, test_list=test_accuracies_4, epochs=epochs, mode='Accuracy',
+                     model=4, question=2)
+    plot_convergence(train_or_kl_list=model4_kl_values, test_list=[], epochs=epochs, mode='KL Divergence', model=4,
+                     question=2)
 
     return model_4, model4_kl_values
 
@@ -366,15 +375,14 @@ def model_5_train_and_test(epochs=BIG_EPOCHS):
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model_5.parameters())
 
-    train_images, train_labels = next(iter(train_loader))  # Fetching the first 200 training samples
+    train_images, train_labels = next(iter(train_loader))
     train_images = train_images.view(-1, 28 * 28)
     train_labels = torch.bernoulli(torch.full((200,), 0.5)).long()
 
     train_accuracies_5, test_accuracies_5 = [], []
     model5_kl_values = []
     for i in range(epochs):
-        print(f'Epoch {i + 1}...')
-        epoch_train_loss, epoch_test_loss = 0, 0
+        print(f'Epoch [{i + 1}/{epochs}]...', end=' ')
         current_train_accuracies, current_test_accuracies = [], []
 
         optimizer.zero_grad()  # https://stackoverflow.com/questions/48001598/why-do-we-need-to-call-zero-grad-in-pytorch
@@ -393,28 +401,32 @@ def model_5_train_and_test(epochs=BIG_EPOCHS):
         loss.backward()
         optimizer.step()
 
-        # # Evaluation after each epoch
-        # for (test_images, test_labels) in test_loader:
-        #     test_images = test_images.view(-1, 28 * 28)
-        #     test_outputs = model_5(test_images)
-        #     test_predictions = torch.argmax(test_outputs, dim=1)
-        #     current_test_accuracies.append(((test_predictions == test_labels).sum().item()) / test_labels.size(0))
+        # Evaluation after each epoch
+        for (test_images, test_labels) in test_loader:
+            test_images = test_images.view(-1, 28 * 28)
+            test_outputs = model_5(test_images)
+            test_predictions = torch.argmax(test_outputs, dim=1)
+            current_test_accuracies.append(((test_predictions == test_labels).sum().item()) / test_labels.size(0))
 
         train_accuracies_5.append(100 * (sum(current_train_accuracies) / len(current_train_accuracies)))
-        # test_accuracies_5.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
+        test_accuracies_5.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
 
         model5_kl_values.append(kl_divergence_from_nn(model=model_5).item())
 
-    # # Plotting accuracy and loss graphs
-    # plot_convergence_over_epochs(train_accuracies_5, test_accuracies_5, epochs=epochs, mode='Accuracy', model=5,
-    #                              question=2)
+        print(f"Train Accuracy: {round(train_accuracies_5[-1], 3)}%, Test Accuracy: {round(test_accuracies_5[-1], 3)}%")
+
+    # Plotting accuracy and KL divergence over epochs
+    plot_convergence(train_or_kl_list=train_accuracies_5, test_list=test_accuracies_5, epochs=epochs, mode='Accuracy',
+                     model=5, question=2)
+    plot_convergence(train_or_kl_list=model5_kl_values, test_list=[], epochs=epochs, mode='KL Divergence', model=5,
+                     question=2)
 
     return model_5, model5_kl_values
 
 
-def save_models(models: list):
+def save_models(models: list, question: int):
     for i in range(len(models)):
-        with open(f"./models/q2/q2_model_{i + 1}.pkl", "wb") as f:
+        with open(f"./models/q{question}/q{question}_model_{i + 1}.pkl", "wb") as f:
             pickle.dump(models[i], f)
 
 
@@ -448,21 +460,23 @@ def main():
     for i in range(len(model_functions)):
         net, values = eval(model_functions[i])  # The eval() function evaluates a given string as a function
         models.append(net)
-        plot_model_kl_divergence(values, model=i + 1)
         model_kl_value = kl_divergence_from_nn(model=net)
         kl_div_values.append(model_kl_value)
         kl_div_per_param_values.append(model_kl_value / count_model_parameters(net))
 
-    # Display KL Divergence values
+    # Print and save KL Divergence values
+    if os.path.exists(r'./kl_values.txt'):
+        os.remove(r'./kl_values.txt')
     for i in range(5):
-        with open('kl_values', 'a') as f:
+        with open('kl_values.txt', 'a') as f:
             f.write(f'Model {i + 1} KL Divergence: {kl_div_values[i]}\n')
             f.write(f'Model {i + 1} KL Divergence per parameter: {kl_div_per_param_values[i]}\n')
         print(f"Model {i + 1}'s KL Divergence: {kl_div_values[i]}; Per parameter: {kl_div_per_param_values[i]}")
 
     # Save models to .pkl files
-    save_models(models)
+    save_models(models=models, question=2)
 
+    # BEEP
     winsound.Beep(FREQ, DURATION)
 
 

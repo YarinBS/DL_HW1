@@ -1,15 +1,20 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import winsound
+from blitz.losses import kl_divergence_from_nn
 from blitz.modules import BayesianLinear
 from blitz.utils import variational_estimator
 
-from hw1_206230021_q1_train import fetch_MNIST_data, plot_convergence_over_epochs, BayesianNeuralNetwork, save_models
+from hw1_206230021_q1_train import fetch_MNIST_data, plot_convergence, BayesianNeuralNetwork, save_models
 
 # --- Hyper-parameters ---
-MINI_EPOCHS = 10
+MINI_EPOCHS = 15
 
-# TODO: Run again (Now the nets have fewer parameters) and paste the graphs in the report
+# --- Sound constants ---
+DURATION = 1500  # milliseconds
+FREQ = 750  # Hz
+
 
 def model_1_train_and_test(epochs=MINI_EPOCHS):
     # --- Model 1 - Unregularized Logistic Regression ---
@@ -23,8 +28,9 @@ def model_1_train_and_test(epochs=MINI_EPOCHS):
     unregularized_optimizer = torch.optim.SGD(lr_model.parameters(), weight_decay=0, lr=0.001)
 
     train_accuracies_1, test_accuracies_1 = [], []
+    model1_kl_values = []
     for i in range(epochs):
-        print(f'Epoch {i + 1}...')
+        print(f'Epoch [{i + 1}/{epochs}]...', end=' ')
         current_train_accuracies, current_test_accuracies = [], []
         # Training phase
         for (train_images, train_labels) in train_loader:
@@ -56,9 +62,16 @@ def model_1_train_and_test(epochs=MINI_EPOCHS):
         train_accuracies_1.append(100 * (sum(current_train_accuracies) / len(current_train_accuracies)))
         test_accuracies_1.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
 
-    # Plotting accuracy over epochs
-    plot_convergence_over_epochs(train_accuracies_1, test_accuracies_1, epochs=epochs, mode='Accuracy', model=1,
-                                 question=3)
+        model1_kl_values.append(kl_divergence_from_nn(model=lr_model))
+
+        print(f"Train Accuracy: {round(train_accuracies_1[-1], 3)}%, Test Accuracy: {round(test_accuracies_1[-1], 3)}%")
+
+    # Plotting accuracy and KL divergence over epochs
+    plot_convergence(train_or_kl_list=train_accuracies_1, test_list=test_accuracies_1, epochs=epochs, mode='Accuracy',
+                     model=1, question=3)
+    plot_convergence(train_or_kl_list=model1_kl_values, test_list=[], epochs=epochs, mode='KL Divergence', model=1,
+                     question=3)
+
     return lr_model
 
 
@@ -73,9 +86,10 @@ def model_2_train_and_test(epochs=MINI_EPOCHS):
     criterion = nn.CrossEntropyLoss()
     regularized_optimizer = torch.optim.SGD(regularized_lr_model.parameters(), weight_decay=1, lr=0.001)
 
-    train_accuracies_2, train_losses_2, test_accuracies_2, test_losses_2 = [], [], [], []
+    train_accuracies_2, test_accuracies_2 = [], []
+    model2_kl_values = []
     for i in range(epochs):
-        print(f'Epoch {i + 1}...')
+        print(f'Epoch [{i + 1}/{epochs}]...', end=' ')
         current_train_accuracies, current_test_accuracies = [], []
         # Training phase
         for (train_images, train_labels) in train_loader:
@@ -107,9 +121,19 @@ def model_2_train_and_test(epochs=MINI_EPOCHS):
         train_accuracies_2.append(100 * (sum(current_train_accuracies) / len(current_train_accuracies)))
         test_accuracies_2.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
 
-    # Plotting accuracy over epochs
-    plot_convergence_over_epochs(train_accuracies_2, test_accuracies_2, epochs=epochs, mode='Accuracy', model=2,
-                                 question=3)
+        # try:
+        #     model2_kl_values.append(kl_divergence_from_nn(model=regularized_lr_model).item())
+        # except AttributeError:
+        model2_kl_values.append(kl_divergence_from_nn(model=regularized_lr_model))
+
+        print(f"Train Accuracy: {round(train_accuracies_2[-1], 3)}%, Test Accuracy: {round(test_accuracies_2[-1], 3)}%")
+
+    # Plotting accuracy and KL divergence over epochs
+    plot_convergence(train_or_kl_list=train_accuracies_2, test_list=test_accuracies_2, epochs=epochs, mode='Accuracy',
+                     model=2, question=3)
+    plot_convergence(train_or_kl_list=model2_kl_values, test_list=[], epochs=epochs, mode='KL Divergence', model=2,
+                     question=3)
+
     return regularized_lr_model
 
 
@@ -126,8 +150,9 @@ def model_3_train_and_test(epochs=MINI_EPOCHS):
     optimizer = torch.optim.Adam(bnn.parameters())
 
     train_accuracies_3, test_accuracies_3 = [], []
+    model3_kl_values = []
     for i in range(epochs):
-        print(f'Epoch {i + 1}...')
+        print(f'Epoch [{i + 1}/{epochs}]...', end=' ')
         current_train_accuracies, current_test_accuracies = [], []
         # Training phase
         for (train_images, train_labels) in train_loader:
@@ -157,12 +182,18 @@ def model_3_train_and_test(epochs=MINI_EPOCHS):
             current_test_accuracies.append(((test_predictions == test_labels).sum().item()) / test_labels.size(0))
 
         train_accuracies_3.append(100 * (sum(current_train_accuracies) / len(current_train_accuracies)))
-
         test_accuracies_3.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
 
-    # Plotting accuracy over epochs
-    plot_convergence_over_epochs(train_accuracies_3, test_accuracies_3, epochs=epochs, mode='Accuracy', model=3,
-                                 question=3)
+        model3_kl_values.append(kl_divergence_from_nn(model=bnn).item())
+
+        print(f"Train Accuracy: {round(train_accuracies_3[-1], 3)}%, Test Accuracy: {round(test_accuracies_3[-1], 3)}%")
+
+    # Plotting accuracy and KL divergence over epochs
+    plot_convergence(train_or_kl_list=train_accuracies_3, test_list=test_accuracies_3, epochs=epochs, mode='Accuracy',
+                     model=3, question=3)
+    plot_convergence(train_or_kl_list=model3_kl_values, test_list=[], epochs=epochs, mode='KL Divergence', model=3,
+                     question=3)
+
     return bnn
 
 
@@ -180,9 +211,9 @@ def model_4_train_and_test(epochs=MINI_EPOCHS):
     optimizer = torch.optim.Adam(dbnn1.parameters())
 
     train_accuracies_4, test_accuracies_4 = [], []
+    model4_kl_values = []
     for i in range(epochs):
-        print(f'Epoch {i + 1}...')
-        epoch_train_loss, epoch_test_loss = 0, 0
+        print(f'Epoch [{i + 1}/{epochs}]...', end=' ')
         current_train_accuracies, current_test_accuracies = [], []
         # Training phase
         for (train_images, train_labels) in train_loader:
@@ -195,7 +226,7 @@ def model_4_train_and_test(epochs=MINI_EPOCHS):
                                      sample_nbr=3,
                                      complexity_cost_weight=1 / 50000)
 
-            train_outputs = dbnn1(train_images)  # Getting model output for the current train batch
+            train_outputs = dbnn1(train_images)
             train_predictions = torch.argmax(train_outputs, dim=1)
 
             current_train_accuracies.append(((train_predictions == train_labels).sum().item()) / train_labels.size(0))
@@ -212,12 +243,18 @@ def model_4_train_and_test(epochs=MINI_EPOCHS):
             current_test_accuracies.append(((test_predictions == test_labels).sum().item()) / test_labels.size(0))
 
         train_accuracies_4.append(100 * (sum(current_train_accuracies) / len(current_train_accuracies)))
-
         test_accuracies_4.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
 
-    # Plotting accuracy over epochs
-    plot_convergence_over_epochs(train_accuracies_4, test_accuracies_4, epochs=epochs, mode='Accuracy', model=4,
-                                 question=3)
+        model4_kl_values.append(kl_divergence_from_nn(model=dbnn1).item())
+
+        print(f"Train Accuracy: {round(train_accuracies_4[-1], 3)}%, Test Accuracy: {round(test_accuracies_4[-1], 3)}%")
+
+    # Plotting accuracy and KL divergence over epochs
+    plot_convergence(train_or_kl_list=train_accuracies_4, test_list=test_accuracies_4, epochs=epochs, mode='Accuracy',
+                     model=4, question=3)
+    plot_convergence(train_or_kl_list=model4_kl_values, test_list=[], epochs=epochs, mode='KL Divergence', model=4,
+                     question=3)
+
     return dbnn1
 
 
@@ -235,9 +272,9 @@ def model_5_train_and_test(epochs=MINI_EPOCHS):
     optimizer = torch.optim.Adam(dbnn2.parameters())
 
     train_accuracies_5, test_accuracies_5 = [], []
+    model5_kl_values = []
     for i in range(epochs):
-        print(f'Epoch {i + 1}...')
-        epoch_train_loss, epoch_test_loss = 0, 0
+        print(f'Epoch [{i + 1}/{epochs}]...', end=' ')
         current_train_accuracies, current_test_accuracies = [], []
         # Training phase
         for (train_images, train_labels) in train_loader:
@@ -267,19 +304,26 @@ def model_5_train_and_test(epochs=MINI_EPOCHS):
             current_test_accuracies.append(((test_predictions == test_labels).sum().item()) / test_labels.size(0))
 
         train_accuracies_5.append(100 * (sum(current_train_accuracies) / len(current_train_accuracies)))
-
         test_accuracies_5.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
 
-    # Plotting accuracy over epochs
-    plot_convergence_over_epochs(train_accuracies_5, test_accuracies_5, epochs=epochs, mode='Accuracy', model=5,
-                                 question=3)
+        model5_kl_values.append(kl_divergence_from_nn(model=dbnn2).item())
+
+        print(f"Train Accuracy: {round(train_accuracies_5[-1], 3)}%, Test Accuracy: {round(test_accuracies_5[-1], 3)}%")
+
+    # Plotting accuracy and KL divergence over epochs
+    plot_convergence(train_or_kl_list=train_accuracies_5, test_list=test_accuracies_5, epochs=epochs, mode='Accuracy',
+                     model=5, question=3)
+    plot_convergence(train_or_kl_list=model5_kl_values, test_list=[], epochs=epochs, mode='KL Divergence', model=5,
+                     question=3)
+
     return dbnn2
 
 
 @variational_estimator
 class LogisticRegressionClassifier(nn.Module):
     """
-    Logistic regression is pretty much a sigmoid function activated on a linear transformation
+    Logistic regression is pretty much a sigmoid function activated on a linear transformation.
+    There's no need to use sigmoid function as it's already included in the CE Loss function.
     """
 
     def __init__(self, input_size, output_size):
@@ -322,7 +366,11 @@ def main():
         model = eval(model_functions[i])
         models.append(model)
 
-    save_models(models)
+    # Save models to .pkl files
+    save_models(models=models, question=3)
+
+    # BEEP
+    winsound.Beep(FREQ, DURATION)
 
 
 if __name__ == '__main__':
