@@ -1,0 +1,10 @@
+Model 1 KL Divergence: 504002.96875
+Model 1 KL Divergence per parameter: 1.0565214157104492
+Model 2 KL Divergence: 551976.625
+Model 2 KL Divergence per parameter: 1.1570866107940674
+Model 3 KL Divergence: 551886.5
+Model 3 KL Divergence per parameter: 1.1687359809875488
+Model 4 KL Divergence: 501352.5625
+Model 4 KL Divergence per parameter: 1.0617197751998901
+Model 5 KL Divergence: 543461.375
+Model 5 KL Divergence per parameter: 1.150894045829773
