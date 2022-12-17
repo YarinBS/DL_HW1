@@ -9,14 +9,14 @@ from blitz.utils import variational_estimator
 from hw1_206230021_q1_train import fetch_MNIST_data, plot_convergence, BayesianNeuralNetwork, save_models
 
 # --- Hyper-parameters ---
-MINI_EPOCHS = 15
+EPOCHS = 15
 
 # --- Sound constants ---
 DURATION = 1500  # milliseconds
 FREQ = 750  # Hz
 
 
-def model_1_train_and_test(epochs=MINI_EPOCHS):
+def model_1_train_and_test(epochs=EPOCHS):
     # --- Model 1 - Unregularized Logistic Regression ---
     train_data, train_loader, test_data, test_loader = fetch_MNIST_data()
 
@@ -34,7 +34,7 @@ def model_1_train_and_test(epochs=MINI_EPOCHS):
         current_train_accuracies, current_test_accuracies = [], []
         # Training phase
         for (train_images, train_labels) in train_loader:
-            train_images = train_images.view(-1, 28 * 28)  # Fitting the image
+            train_images = train_images.view(-1, 28 * 28)
 
             unregularized_optimizer.zero_grad()  # https://stackoverflow.com/questions/48001598/why-do-we-need-to-call-zero-grad-in-pytorch
             loss = lr_model.sample_elbo(inputs=train_images,
@@ -43,7 +43,7 @@ def model_1_train_and_test(epochs=MINI_EPOCHS):
                                         sample_nbr=3,
                                         complexity_cost_weight=1 / 50000)
 
-            train_outputs = lr_model(train_images)  # Getting model output for the current train batch
+            train_outputs = lr_model(train_images)
             train_predictions = torch.argmax(train_outputs, dim=1)
 
             current_train_accuracies.append(((train_predictions == train_labels).sum().item()) / train_labels.size(0))
@@ -52,7 +52,7 @@ def model_1_train_and_test(epochs=MINI_EPOCHS):
             loss.backward()
             unregularized_optimizer.step()
 
-        # Evaluation after each epoch
+        # Evaluation
         for (test_images, test_labels) in test_loader:
             test_images = test_images.view(-1, 28 * 28)
             test_outputs = lr_model(test_images)
@@ -75,7 +75,7 @@ def model_1_train_and_test(epochs=MINI_EPOCHS):
     return lr_model
 
 
-def model_2_train_and_test(epochs=MINI_EPOCHS):
+def model_2_train_and_test(epochs=EPOCHS):
     # --- Model 2 - Regularized Logistic Regression ---
     train_data, train_loader, test_data, test_loader = fetch_MNIST_data()
 
@@ -93,16 +93,16 @@ def model_2_train_and_test(epochs=MINI_EPOCHS):
         current_train_accuracies, current_test_accuracies = [], []
         # Training phase
         for (train_images, train_labels) in train_loader:
-            train_images = train_images.view(-1, 28 * 28)  # Fitting the image
+            train_images = train_images.view(-1, 28 * 28)
 
-            regularized_optimizer.zero_grad()  # https://stackoverflow.com/questions/48001598/why-do-we-need-to-call-zero-grad-in-pytorch
+            regularized_optimizer.zero_grad()
             loss = regularized_lr_model.sample_elbo(inputs=train_images,
                                                     labels=train_labels,
                                                     criterion=criterion,
                                                     sample_nbr=3,
                                                     complexity_cost_weight=1 / 50000)
 
-            train_outputs = regularized_lr_model(train_images)  # Getting model output for the current train batch
+            train_outputs = regularized_lr_model(train_images)
             train_predictions = torch.argmax(train_outputs, dim=1)
 
             current_train_accuracies.append(((train_predictions == train_labels).sum().item()) / train_labels.size(0))
@@ -111,7 +111,7 @@ def model_2_train_and_test(epochs=MINI_EPOCHS):
             loss.backward()
             regularized_optimizer.step()
 
-        # Evaluation after each epoch
+        # Evaluation
         for (test_images, test_labels) in test_loader:
             test_images = test_images.view(-1, 28 * 28)
             test_outputs = regularized_lr_model(test_images)
@@ -121,9 +121,6 @@ def model_2_train_and_test(epochs=MINI_EPOCHS):
         train_accuracies_2.append(100 * (sum(current_train_accuracies) / len(current_train_accuracies)))
         test_accuracies_2.append(100 * (sum(current_test_accuracies) / len(current_test_accuracies)))
 
-        # try:
-        #     model2_kl_values.append(kl_divergence_from_nn(model=regularized_lr_model).item())
-        # except AttributeError:
         model2_kl_values.append(kl_divergence_from_nn(model=regularized_lr_model))
 
         print(f"Train Accuracy: {round(train_accuracies_2[-1], 3)}%, Test Accuracy: {round(test_accuracies_2[-1], 3)}%")
@@ -137,7 +134,7 @@ def model_2_train_and_test(epochs=MINI_EPOCHS):
     return regularized_lr_model
 
 
-def model_3_train_and_test(epochs=MINI_EPOCHS):
+def model_3_train_and_test(epochs=EPOCHS):
     # --- Model 3 - BNN ---
     train_data, train_loader, test_data, test_loader = fetch_MNIST_data()
 
@@ -156,16 +153,16 @@ def model_3_train_and_test(epochs=MINI_EPOCHS):
         current_train_accuracies, current_test_accuracies = [], []
         # Training phase
         for (train_images, train_labels) in train_loader:
-            train_images = train_images.view(-1, 28 * 28)  # Fitting the image
+            train_images = train_images.view(-1, 28 * 28)
 
-            optimizer.zero_grad()  # https://stackoverflow.com/questions/48001598/why-do-we-need-to-call-zero-grad-in-pytorch
+            optimizer.zero_grad()
             loss = bnn.sample_elbo(inputs=train_images,
                                    labels=train_labels,
                                    criterion=criterion,
                                    sample_nbr=3,
                                    complexity_cost_weight=1 / 50000)
 
-            train_outputs = bnn(train_images)  # Getting model output for the current train batch
+            train_outputs = bnn(train_images)
             train_predictions = torch.argmax(train_outputs, dim=1)
 
             current_train_accuracies.append(((train_predictions == train_labels).sum().item()) / train_labels.size(0))
@@ -174,7 +171,7 @@ def model_3_train_and_test(epochs=MINI_EPOCHS):
             loss.backward()
             optimizer.step()
 
-        # Evaluation after each epoch
+        # Evaluation
         for (test_images, test_labels) in test_loader:
             test_images = test_images.view(-1, 28 * 28)
             test_outputs = bnn(test_images)
@@ -197,7 +194,7 @@ def model_3_train_and_test(epochs=MINI_EPOCHS):
     return bnn
 
 
-def model_4_train_and_test(epochs=MINI_EPOCHS):
+def model_4_train_and_test(epochs=EPOCHS):
     # --- Model 4 - Deep BNN with hidden1 = 150, hidden2 = 100 ---
     train_data, train_loader, test_data, test_loader = fetch_MNIST_data()
 
@@ -217,9 +214,9 @@ def model_4_train_and_test(epochs=MINI_EPOCHS):
         current_train_accuracies, current_test_accuracies = [], []
         # Training phase
         for (train_images, train_labels) in train_loader:
-            train_images = train_images.view(-1, 28 * 28)  # Fitting the image
+            train_images = train_images.view(-1, 28 * 28)
 
-            optimizer.zero_grad()  # https://stackoverflow.com/questions/48001598/why-do-we-need-to-call-zero-grad-in-pytorch
+            optimizer.zero_grad()
             loss = dbnn1.sample_elbo(inputs=train_images,
                                      labels=train_labels,
                                      criterion=criterion,
@@ -235,7 +232,7 @@ def model_4_train_and_test(epochs=MINI_EPOCHS):
             loss.backward()
             optimizer.step()
 
-        # Evaluation after each epoch
+        # Evaluation
         for (test_images, test_labels) in test_loader:
             test_images = test_images.view(-1, 28 * 28)
             test_outputs = dbnn1(test_images)
@@ -258,7 +255,7 @@ def model_4_train_and_test(epochs=MINI_EPOCHS):
     return dbnn1
 
 
-def model_5_train_and_test(epochs=MINI_EPOCHS):
+def model_5_train_and_test(epochs=EPOCHS):
     # --- Model 5 - Deep BNN with hidden1 = 150, hidden2 = 50 ---
     train_data, train_loader, test_data, test_loader = fetch_MNIST_data()
 
@@ -278,16 +275,16 @@ def model_5_train_and_test(epochs=MINI_EPOCHS):
         current_train_accuracies, current_test_accuracies = [], []
         # Training phase
         for (train_images, train_labels) in train_loader:
-            train_images = train_images.view(-1, 28 * 28)  # Fitting the image
+            train_images = train_images.view(-1, 28 * 28)
 
-            optimizer.zero_grad()  # https://stackoverflow.com/questions/48001598/why-do-we-need-to-call-zero-grad-in-pytorch
+            optimizer.zero_grad()
             loss = dbnn2.sample_elbo(inputs=train_images,
                                      labels=train_labels,
                                      criterion=criterion,
                                      sample_nbr=3,
                                      complexity_cost_weight=1 / 50000)
 
-            train_outputs = dbnn2(train_images)  # Getting model output for the current train batch
+            train_outputs = dbnn2(train_images)
             train_predictions = torch.argmax(train_outputs, dim=1)
 
             current_train_accuracies.append(((train_predictions == train_labels).sum().item()) / train_labels.size(0))
@@ -296,7 +293,7 @@ def model_5_train_and_test(epochs=MINI_EPOCHS):
             loss.backward()
             optimizer.step()
 
-        # Evaluation after each epoch
+        # Evaluation
         for (test_images, test_labels) in test_loader:
             test_images = test_images.view(-1, 28 * 28)
             test_outputs = dbnn2(test_images)
